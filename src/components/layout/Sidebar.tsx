@@ -13,7 +13,7 @@ const navItems: NavItem[] = [
     { id: "products", label: "Products", icon: "📦" },
     { id: "categories", label: "Categories", icon: "🗂️" },
     { id: "customers", label: "Customers", icon: "👥" },
-    { id: "orders", label: "Orders", icon: "🛒" },
+    //{ id: "orders", label: "Orders", icon: "🛒" },
 ];
 
 function Sidebar() {
