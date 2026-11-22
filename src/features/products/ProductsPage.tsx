@@ -9,15 +9,23 @@ function ProductsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [productsList, setProductsList] = useState<Product[]>(products)
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
 
 
     useEffect(() => {
-    console.log('Products state changed:', productsList);
-}, [productsList]);
+        console.log('Products state changed:', productsList);
+    }, [productsList]);
 
-    const filteredProducts = productsList.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    
+    const filteredProducts = productsList.filter(
+        product => {
+            const matchesCategory = !selectedCategory || product.category === selectedCategory;
+            const matchesSearch = product.name
+            .toLowerCase().includes(searchTerm.toLowerCase()) ;
+        return matchesCategory && matchesSearch
+        });
+
+    
 
 
     const handleAddProduct = (newProduct : Omit<Product, 'id'>) => {
@@ -38,7 +46,6 @@ function ProductsPage() {
         const productToEdit = productsList.find(
             product => product.id === id
         );
-        console.log(productToEdit);
 
         if (productToEdit) {
             setSelectedProduct(productToEdit);
@@ -85,10 +92,10 @@ function ProductsPage() {
                 <button
                 onClick={() => {
                     setIsModalOpen(true)
-                      setSelectedProduct(null);
+                    setSelectedProduct(null);
                 } }
                 id="add-product-button"
-                    className=" bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition "
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition "
                 >
                     + Add Product
                 </button>
@@ -99,9 +106,6 @@ function ProductsPage() {
             {/* <!-- Summary Cards -->  */}
             <div id="summary-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
 
-               
-                
-                 {/*  ${renderSummaryCards()} */}
                  {renderSummaryCards(productsList)}
 
             </div>
@@ -128,10 +132,14 @@ function ProductsPage() {
                             className="border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                         />
 
-                        <button className="border border-slate-300 rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
-                            Filter
-                        </button>
+                        <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} name="category">
+                            <option value="">All Categories</option>
+                            <option value="Laptops">Laptops</option>
+                            <option value="Monitors">Monitors</option>
+                            <option value="Accessories">Accessories</option>
+                        </select>
                     </div>
+
                 </div>
 
                 <div className="overflow-x-auto">
@@ -149,8 +157,18 @@ function ProductsPage() {
                         </thead>
 
                         <tbody id="products-table-body" className="divide-y divide-slate-100">
+
+
+                            {
+                                filteredProducts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-8 text-slate-500">No products found.</td>
+                                    </tr>
+                                ) : (
+                                    renderProductRows(filteredProducts, handleDeleteProduct,handleOpenEditModal)
+                                )
+                            }
                            
-                        {renderProductRows(filteredProducts, handleDeleteProduct,handleOpenEditModal)}
 
                         </tbody>
                     </table>
@@ -158,7 +176,7 @@ function ProductsPage() {
 
                 <div className="flex items-center justify-between p-5 border-t border-slate-200">
                     <p className="text-sm text-slate-500">
-                        Showing 1 to 3 of 124 products
+                        Showing 1 to {filteredProducts.length} of {filteredProducts.length} products
                     </p>
 
                     <div className="flex gap-2">
@@ -239,8 +257,9 @@ function renderSummaryCards(productList: Product[]) {
 function renderProductRows(
     productsList : Product[],
     onDelete : (id : number) => void, 
-    onEdit : (id: number) => void
+    onEdit : (id: number) => void,
 ) {
+
     return(
         <>
             {productsList.map((product) => (

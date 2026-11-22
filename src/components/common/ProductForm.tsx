@@ -27,7 +27,6 @@ function ProductForm({ onClose , onAddProduct, productToEdit ,onEditProduct  }: 
             onEditProduct(productToEdit.id, product)
         }else{
             onAddProduct(product);
-
         }
 
         onClose();

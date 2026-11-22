@@ -1,4 +1,4 @@
-import type {Product} from '../types/Product.tsx'
+import type {Product} from '../types/Product.ts'
 
 
 
