@@ -2,6 +2,7 @@ import { useState , useEffect } from 'react';
 import products from "../../data/products";
 import type {Product} from '../../types/Product'
 import  ProductForm from "../../components/common/ProductForm.tsx";
+import StockToggle from "../../components/common/StockToggle.tsx";
 
 
 function ProductsPage() {
@@ -10,11 +11,17 @@ function ProductsPage() {
     const [productsList, setProductsList] = useState<Product[]>(products)
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [inStock, setInStock] = useState(true);
 
 
     useEffect(() => {
         console.log('Products state changed:', productsList);
     }, [productsList]);
+
+
+    const totalStock = productsList.reduce(
+        (total, product) => total + product.quantity, 0
+    )
 
     
     const filteredProducts = productsList.filter(
@@ -22,8 +29,10 @@ function ProductsPage() {
             const matchesCategory = !selectedCategory || product.category === selectedCategory;
             const matchesSearch = product.name
             .toLowerCase().includes(searchTerm.toLowerCase()) ;
-        return matchesCategory && matchesSearch
+            const InStock = inStock ? product.quantity > 5 : product.quantity < 5; 
+        return matchesCategory && matchesSearch && InStock
         });
+    
 
     
 
@@ -106,7 +115,7 @@ function ProductsPage() {
             {/* <!-- Summary Cards -->  */}
             <div id="summary-cards" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
 
-                 {renderSummaryCards(productsList)}
+                 {renderSummaryCards(productsList, totalStock)}
 
             </div>
 
@@ -138,7 +147,10 @@ function ProductsPage() {
                             <option value="Monitors">Monitors</option>
                             <option value="Accessories">Accessories</option>
                         </select>
+                        <StockToggle  inStock={inStock} onToggle={() => setInStock(prev => !prev)}/>
+                        
                     </div>
+                   
 
                 </div>
 
@@ -217,7 +229,8 @@ function ProductsPage() {
 
 export default ProductsPage;
 
-function renderSummaryCards(productList: Product[]) {
+function renderSummaryCards(productList: Product[], totalStock: number) {
+    console.log('typeof totalstock ', typeof totalStock)
     return (
         <>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
@@ -233,7 +246,7 @@ function renderSummaryCards(productList: Product[]) {
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                 <p className="text-sm text-slate-500">Total Stock</p>
                 <h2 className="text-3xl font-bold text-slate-800 mt-2">
-                    856
+                    {totalStock}
                 </h2>
                 <p className="text-xs text-slate-500 mt-2">
                     Units available

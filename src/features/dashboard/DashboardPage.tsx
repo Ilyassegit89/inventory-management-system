@@ -1,3 +1,9 @@
+
+
+
+import products from "../../data/products";
+
+
 interface DashboardStat {
     title: string;
     value: number;
@@ -9,7 +15,7 @@ interface DashboardStat {
 const stats: DashboardStat[] = [
     {
         title: "Total Products",
-        value: 124,
+        value: products.length,
         description: "Products in inventory",
         icon: "📦",
         color: "blue"
