@@ -3,11 +3,15 @@ import products from "../../data/products";
 import type {Product} from '../../types/Product'
 import  ProductForm from "../../components/common/ProductForm.tsx";
 import StockToggle from "../../components/common/StockToggle.tsx";
+import ConfirmModal from "../../components/common/ConfirmModal.tsx";
 
 
 function ProductsPage() {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [selectedProductId , setSelectedProductId] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isConfModalOpen, SetConfModalOpen] = useState(false);
+
     const [productsList, setProductsList] = useState<Product[]>(products)
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -42,8 +46,6 @@ function ProductsPage() {
         localStorage.setItem('products', JSON.stringify(productsList))
 
     }, [productsList, isLoaded])
-
-    
 
 
     const totalStock = useMemo(() => {
@@ -80,9 +82,6 @@ function ProductsPage() {
     }, [productsList, searchTerm, sortOrder, selectedCategory, inStock])
 
 
-   
-
-
     const handleAddProduct = (newProduct : Omit<Product, 'id'>) => {
         const product = {
             id: productsList.length > 0 
@@ -94,7 +93,6 @@ function ProductsPage() {
         const updatedProducts = [...productsList, product];
 
         setProductsList(updatedProducts);
-
     }
 
     const handleOpenEditModal = (id: number) => {
@@ -124,11 +122,23 @@ function ProductsPage() {
     }
 
     const handleDeleteProduct = (id: number) => {
+        // Find the product before deleting it
+    const removedProduct = productsList.find(product => product.id === id);
+
         setProductsList(prevProduct => 
             prevProduct.filter(product => product.id !== id)
         )
 
-    }
+        SetConfModalOpen(false);
+         console.log('Removed product:', removedProduct);
+
+    }  
+
+   const handleOpenConfirmModal = (id : number) => {
+        setSelectedProductId(id);
+        SetConfModalOpen(true)
+        console.log('Opened model')
+   }
 
     return (
          <div className="space-y-6">
@@ -230,7 +240,7 @@ function ProductsPage() {
                                         <td colSpan={6} className="text-center py-8 text-slate-500">No products found.</td>
                                     </tr>
                                 ) : (
-                                    renderProductRows(sortedAndFilteredProducts, handleDeleteProduct,handleOpenEditModal)
+                                    renderProductRows(sortedAndFilteredProducts, handleOpenConfirmModal,handleOpenEditModal )
                                 )
                             }
                            
@@ -270,6 +280,10 @@ function ProductsPage() {
                     productToEdit={selectedProduct}
 
                 />
+            )}
+
+            {isConfModalOpen && selectedProductId !== null  && (
+                <ConfirmModal productId={selectedProductId} onClose={() => SetConfModalOpen(false)} onDelete={handleDeleteProduct} />
             )}
 
         </div>
@@ -321,7 +335,7 @@ function renderSummaryCards(productList: Product[], totalStock: number) {
 
 function renderProductRows(
     productsList : Product[],
-    onDelete : (id : number) => void, 
+    onOpenConfModel : ( id: number) => void, 
     onEdit : (id: number) => void,
 ) {
 
@@ -355,7 +369,7 @@ function renderProductRows(
 
                     <td className="px-6 py-4">
                         <button onClick={() => onEdit(product.id)} data-id={product.id} className="edit-product-button text-blue-600 hover:text-blue-800" >Edit</button>
-                        <button onClick={() => onDelete(product.id)}    data-id={product.id} className="delete-product-button text-red-600 hover:text-red-800 ml-3">Delete</button>
+                        <button onClick={() => onOpenConfModel(product.id)} data-id={product.id} className="delete-product-button text-red-600 hover:text-red-800 ml-3">Delete</button>
                     </td>
 
                 </tr>
