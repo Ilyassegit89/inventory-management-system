@@ -1,4 +1,4 @@
-import { useState , useEffect } from 'react';
+import { useState , useEffect, useMemo } from 'react';
 import products from "../../data/products";
 import type {Product} from '../../types/Product'
 import  ProductForm from "../../components/common/ProductForm.tsx";
@@ -12,29 +12,50 @@ function ProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [inStock, setInStock] = useState(true);
-
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     useEffect(() => {
         console.log('Products state changed:', productsList);
     }, [productsList]);
 
 
-    const totalStock = productsList.reduce(
-        (total, product) => total + product.quantity, 0
-    )
-
-    
-    const filteredProducts = productsList.filter(
-        product => {
-            const matchesCategory = !selectedCategory || product.category === selectedCategory;
-            const matchesSearch = product.name
-            .toLowerCase().includes(searchTerm.toLowerCase()) ;
-            const InStock = inStock ? product.quantity > 5 : product.quantity < 5; 
-        return matchesCategory && matchesSearch && InStock
-        });
+    const totalStock = useMemo(() => {
+        return  productsList.reduce(
+          (total, product) => total + product.quantity, 0)
+    }, [productsList])
     
 
-    
+    const sortedAndFilteredProducts : Product[] = useMemo(() => {
+        //Filter By Peoduct Name
+        let result = productsList.filter(product => 
+            product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        
+        )
+
+        //Filter BY Category
+         if(selectedCategory !== ''){
+            result = result.filter(product =>
+                 product.category === selectedCategory
+        )} 
+
+        //Filter by Stock
+        const productsInStock = result.filter(product => product.quantity > 5);
+        const productsInLowStock = result.filter(product => product.quantity < 5);
+
+        result = inStock ? productsInStock : productsInLowStock;
+
+        result = [...result].sort((a, b) => {
+            return sortOrder === 'asc' 
+            ? a.name.localeCompare(b.name)
+            : b.name.localeCompare(a.name);
+        })
+        return result 
+    }, [productsList, searchTerm, sortOrder, selectedCategory, inStock])
+
+
+    console.log('sortedAndFilteredProducts function', sortedAndFilteredProducts)
+    console.log('selected category', selectedCategory)
+    console.log('inStock toggle', inStock)
 
 
     const handleAddProduct = (newProduct : Omit<Product, 'id'>) => {
@@ -148,6 +169,13 @@ function ProductsPage() {
                             <option value="Accessories">Accessories</option>
                         </select>
                         <StockToggle  inStock={inStock} onToggle={() => setInStock(prev => !prev)}/>
+                        <select
+                            value={sortOrder}
+                            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                        >
+                            <option value="asc">Name: A-Z</option>
+                            <option value="desc">Name: Z-A</option>
+                        </select>
                         
                     </div>
                    
@@ -172,12 +200,12 @@ function ProductsPage() {
 
 
                             {
-                                filteredProducts.length === 0 ? (
+                                sortedAndFilteredProducts.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-8 text-slate-500">No products found.</td>
                                     </tr>
                                 ) : (
-                                    renderProductRows(filteredProducts, handleDeleteProduct,handleOpenEditModal)
+                                    renderProductRows(sortedAndFilteredProducts, handleDeleteProduct,handleOpenEditModal)
                                 )
                             }
                            
@@ -188,7 +216,7 @@ function ProductsPage() {
 
                 <div className="flex items-center justify-between p-5 border-t border-slate-200">
                     <p className="text-sm text-slate-500">
-                        Showing 1 to {filteredProducts.length} of {filteredProducts.length} products
+                        Showing 1 to {sortedAndFilteredProducts.length} of {sortedAndFilteredProducts.length} products
                     </p>
 
                     <div className="flex gap-2">
