@@ -13,10 +13,37 @@ function ProductsPage() {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [inStock, setInStock] = useState(true);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-
+    // Tracks whether products have finished loading
+    const [isLoaded, setIsLoaded] = useState(false);
+    
+    // Load saved products when the component first opens
     useEffect(() => {
         console.log('Products state changed:', productsList);
-    }, [productsList]);
+
+         // Get products saved in the browser
+        const savedProducts = localStorage.getItem('products');
+
+        if(savedProducts !== null){
+              // Convert saved JSON data back into a JavaScript array
+            const parsedProducts = JSON.parse(savedProducts);
+            // Update the products state with saved products
+            setProductsList(parsedProducts)
+        }
+        // Mark loading as finished
+        setIsLoaded(true);
+    }, []);
+
+    // Save products whenever the products list changes
+    useEffect(() => {
+        // Don't save until the initial loading is finished
+        if (!isLoaded) return;
+
+        // Convert products into JSON and save them in the browser
+        localStorage.setItem('products', JSON.stringify(productsList))
+
+    }, [productsList, isLoaded])
+
+    
 
 
     const totalStock = useMemo(() => {
@@ -53,9 +80,7 @@ function ProductsPage() {
     }, [productsList, searchTerm, sortOrder, selectedCategory, inStock])
 
 
-    console.log('sortedAndFilteredProducts function', sortedAndFilteredProducts)
-    console.log('selected category', selectedCategory)
-    console.log('inStock toggle', inStock)
+   
 
 
     const handleAddProduct = (newProduct : Omit<Product, 'id'>) => {
@@ -258,7 +283,6 @@ function ProductsPage() {
 export default ProductsPage;
 
 function renderSummaryCards(productList: Product[], totalStock: number) {
-    console.log('typeof totalstock ', typeof totalStock)
     return (
         <>
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
