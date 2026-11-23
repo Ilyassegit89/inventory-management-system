@@ -19,6 +19,9 @@ function ProductsPage() {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     // Tracks whether products have finished loading
     const [isLoaded, setIsLoaded] = useState(false);
+    //Pagination 
+    const [currentPage, SetCurrentPage] = useState(1);
+
     
     // Load saved products when the component first opens
     useEffect(() => {
@@ -80,6 +83,74 @@ function ProductsPage() {
         })
         return result 
     }, [productsList, searchTerm, sortOrder, selectedCategory, inStock])
+
+
+    // ===== Pagination =====
+
+        const productsPerPage = 5;
+
+        // Calculate the total number of pages
+        const totalPages = Math.ceil(
+            sortedAndFilteredProducts.length / productsPerPage
+        )
+
+        console.log('total Pages', totalPages)//4
+
+
+        const visiblePages : (number | string)[] = [];
+        let startPage = Math.max(2, currentPage - 1);
+        let endPage = Math.min(totalPages - 1, currentPage + 1 )
+
+        // Always show the first page
+        visiblePages.push(1);
+
+        if (startPage > 2) {
+            visiblePages.push("...");
+        }
+
+        // Add pages around the current page
+        for (let i = startPage; i <= endPage; i++) {
+            visiblePages.push(i);
+        }
+
+        // Show dots if there are hidden pages after
+        if (endPage < totalPages - 1) {
+            visiblePages.push("...");
+        }
+
+        // Always show the last page (if there is more than one)
+        if (totalPages > 1) {
+            visiblePages.push(totalPages);
+        }
+        
+
+        // Calculate which products to display
+        const startIndex = (currentPage - 1) * productsPerPage;
+        const endIndex = startIndex + productsPerPage;
+        const currentProducts = sortedAndFilteredProducts.slice(
+            startIndex,
+            endIndex
+        );
+
+        // Get products for the current page
+
+         const startItem = startIndex + 1;
+        const endItem = Math.min(
+            startIndex + currentProducts.length,
+            sortedAndFilteredProducts.length
+        );
+
+        useEffect(() => {
+        console.log("Current Page:", currentPage);
+    }, [currentPage]);
+
+    // ===== Pagination Actions =====
+    const handleNextPage  = () => {
+        SetCurrentPage(prev => Math.min(prev + 1, totalPages))
+    }
+    const handlePreviousPage = () => {
+        SetCurrentPage(prev => Math.max(prev - 1, 1));
+    };
 
 
     const handleAddProduct = (newProduct : Omit<Product, 'id'>) => {
@@ -235,12 +306,12 @@ function ProductsPage() {
 
 
                             {
-                                sortedAndFilteredProducts.length === 0 ? (
+                                currentProducts.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-8 text-slate-500">No products found.</td>
                                     </tr>
                                 ) : (
-                                    renderProductRows(sortedAndFilteredProducts, handleOpenConfirmModal,handleOpenEditModal )
+                                    renderProductRows(currentProducts, handleOpenConfirmModal,handleOpenEditModal )
                                 )
                             }
                            
@@ -251,20 +322,45 @@ function ProductsPage() {
 
                 <div className="flex items-center justify-between p-5 border-t border-slate-200">
                     <p className="text-sm text-slate-500">
-                        Showing 1 to {sortedAndFilteredProducts.length} of {sortedAndFilteredProducts.length} products
+                        Showing {startItem} to {endItem} of {sortedAndFilteredProducts.length} products
                     </p>
 
                     <div className="flex gap-2">
-                        <button className="border border-slate-300 rounded-lg px-3 py-1 text-sm text-slate-500">
+                        <button onClick={handlePreviousPage}  disabled={currentPage === 1}
+                        className={`border rounded-lg px-3 py-1 text-sm ${
+                            currentPage === 1
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-slate-600 hover:bg-gray-100'
+                        }`}>
                             Previous
                         </button>
-                        <button className="bg-blue-600 text-white rounded-lg px-3 py-1 text-sm">
-                            1
+                        {visiblePages.map((page, index) => (
+                        <button
+                            key={`${page}-${index}`}
+                            disabled={page === "..."}
+                            onClick={() => {
+                                if (typeof page === "number") {
+                                    SetCurrentPage(page);
+                                }
+                            }}
+                            className={`rounded-lg px-3 py-1 text-sm ${
+                                page === currentPage
+                                    ? 'bg-blue-600 text-white'
+                                    : page === "..."
+                                        ? 'cursor-default text-slate-500'
+                                        : 'border border-slate-300 text-slate-600 hover:bg-gray-100'
+                            }`}
+                        >
+                            {page}
                         </button>
-                        <button className="border border-slate-300 rounded-lg px-3 py-1 text-sm text-slate-600">
-                            2
-                        </button>
-                        <button className="border border-slate-300 rounded-lg px-3 py-1 text-sm text-slate-600">
+                    ))}
+                        
+                        
+                        <button disabled={currentPage === totalPages}  onClick={handleNextPage}  className={`border rounded-lg px-3 py-1 text-sm ${
+                            currentPage === totalPages
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-slate-600 hover:bg-gray-100'
+                        }`}>
                             Next
                         </button>
                     </div>
