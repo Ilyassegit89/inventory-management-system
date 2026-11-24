@@ -4,6 +4,9 @@ import type {Product} from '../../types/Product'
 import  ProductForm from "../../components/common/ProductForm.tsx";
 import StockToggle from "../../components/common/StockToggle.tsx";
 import ConfirmModal from "../../components/common/ConfirmModal.tsx";
+import usePagination from '../../hooks/usePagination.ts'
+import renderProductRows from "../../features/products/ProductTable.tsx"
+import renderSummaryCards from "../../features/products/ProductSummaryCards.tsx"
 
 
 function ProductsPage() {
@@ -19,8 +22,6 @@ function ProductsPage() {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     // Tracks whether products have finished loading
     const [isLoaded, setIsLoaded] = useState(false);
-    //Pagination 
-    const [currentPage, SetCurrentPage] = useState(1);
 
     
     // Load saved products when the component first opens
@@ -84,73 +85,18 @@ function ProductsPage() {
         return result 
     }, [productsList, searchTerm, sortOrder, selectedCategory, inStock])
 
+     // ===== Pagination =====
 
-    // ===== Pagination =====
+    const pagination = usePagination(sortedAndFilteredProducts, 5);
 
-        const productsPerPage = 5;
+     console.log('total Pages', pagination.totalPages)//4
 
-        // Calculate the total number of pages
-        const totalPages = Math.ceil(
-            sortedAndFilteredProducts.length / productsPerPage
-        )
-
-        console.log('total Pages', totalPages)//4
-
-
-        const visiblePages : (number | string)[] = [];
-        let startPage = Math.max(2, currentPage - 1);
-        let endPage = Math.min(totalPages - 1, currentPage + 1 )
-
-        // Always show the first page
-        visiblePages.push(1);
-
-        if (startPage > 2) {
-            visiblePages.push("...");
-        }
-
-        // Add pages around the current page
-        for (let i = startPage; i <= endPage; i++) {
-            visiblePages.push(i);
-        }
-
-        // Show dots if there are hidden pages after
-        if (endPage < totalPages - 1) {
-            visiblePages.push("...");
-        }
-
-        // Always show the last page (if there is more than one)
-        if (totalPages > 1) {
-            visiblePages.push(totalPages);
-        }
-        
-
-        // Calculate which products to display
-        const startIndex = (currentPage - 1) * productsPerPage;
-        const endIndex = startIndex + productsPerPage;
-        const currentProducts = sortedAndFilteredProducts.slice(
-            startIndex,
-            endIndex
-        );
-
-        // Get products for the current page
-
-         const startItem = startIndex + 1;
-        const endItem = Math.min(
-            startIndex + currentProducts.length,
-            sortedAndFilteredProducts.length
-        );
 
         useEffect(() => {
-        console.log("Current Page:", currentPage);
-    }, [currentPage]);
+        console.log("Current Page:", pagination.currentPage);
+    }, [pagination.currentPage]);
 
-    // ===== Pagination Actions =====
-    const handleNextPage  = () => {
-        SetCurrentPage(prev => Math.min(prev + 1, totalPages))
-    }
-    const handlePreviousPage = () => {
-        SetCurrentPage(prev => Math.max(prev - 1, 1));
-    };
+   
 
 
     const handleAddProduct = (newProduct : Omit<Product, 'id'>) => {
@@ -306,12 +252,12 @@ function ProductsPage() {
 
 
                             {
-                                currentProducts.length === 0 ? (
+                                pagination.currentProducts.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-8 text-slate-500">No products found.</td>
                                     </tr>
                                 ) : (
-                                    renderProductRows(currentProducts, handleOpenConfirmModal,handleOpenEditModal )
+                                    renderProductRows(pagination.currentProducts, handleOpenConfirmModal,handleOpenEditModal )
                                 )
                             }
                            
@@ -322,29 +268,29 @@ function ProductsPage() {
 
                 <div className="flex items-center justify-between p-5 border-t border-slate-200">
                     <p className="text-sm text-slate-500">
-                        Showing {startItem} to {endItem} of {sortedAndFilteredProducts.length} products
+                        Showing {pagination.startItem} to {pagination.endItem} of {sortedAndFilteredProducts.length} products
                     </p>
 
                     <div className="flex gap-2">
-                        <button onClick={handlePreviousPage}  disabled={currentPage === 1}
+                        <button onClick={pagination.handlePreviousPage}  disabled={pagination.currentPage === 1}
                         className={`border rounded-lg px-3 py-1 text-sm ${
-                            currentPage === 1
+                            pagination.currentPage === 1
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 : 'bg-white text-slate-600 hover:bg-gray-100'
                         }`}>
                             Previous
                         </button>
-                        {visiblePages.map((page, index) => (
+                        {pagination.visiblePages.map((page, index) => (
                         <button
                             key={`${page}-${index}`}
                             disabled={page === "..."}
                             onClick={() => {
                                 if (typeof page === "number") {
-                                    SetCurrentPage(page);
+                                    pagination.setCurrentPage(page);
                                 }
                             }}
                             className={`rounded-lg px-3 py-1 text-sm ${
-                                page === currentPage
+                                page === pagination.currentPage
                                     ? 'bg-blue-600 text-white'
                                     : page === "..."
                                         ? 'cursor-default text-slate-500'
@@ -356,8 +302,8 @@ function ProductsPage() {
                     ))}
                         
                         
-                        <button disabled={currentPage === totalPages}  onClick={handleNextPage}  className={`border rounded-lg px-3 py-1 text-sm ${
-                            currentPage === totalPages
+                        <button disabled={pagination.currentPage === pagination.totalPages}  onClick={pagination.handleNextPage}  className={`border rounded-lg px-3 py-1 text-sm ${
+                            pagination.currentPage === pagination.totalPages
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 : 'bg-white text-slate-600 hover:bg-gray-100'
                         }`}>
@@ -392,86 +338,7 @@ function ProductsPage() {
 
 export default ProductsPage;
 
-function renderSummaryCards(productList: Product[], totalStock: number) {
-    return (
-        <>
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-sm text-slate-500">Total Products</p>
-                <h2 className="text-3xl font-bold text-slate-800 mt-2">
-                    {productList.length}
-                </h2>
-                <p className="text-xs text-green-600 mt-2">
-                    Products in inventory
-                </p>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-sm text-slate-500">Total Stock</p>
-                <h2 className="text-3xl font-bold text-slate-800 mt-2">
-                    {totalStock}
-                </h2>
-                <p className="text-xs text-slate-500 mt-2">
-                    Units available
-                </p>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-sm text-slate-500">Low Stock Products</p>
-                <h2 className="text-3xl font-bold text-red-600 mt-2">
-                    {productList.filter(product => product.quantity < 5).length}
-                </h2>
-                <p className="text-xs text-red-500 mt-2">
-                    Need restocking
-                </p>
-            </div>
-        </>
-    );
-}
 
 
-function renderProductRows(
-    productsList : Product[],
-    onOpenConfModel : ( id: number) => void, 
-    onEdit : (id: number) => void,
-) {
 
-    return(
-        <>
-            {productsList.map((product) => (
-                <tr key={product.id} className="hover:bg-slate-50">
 
-                    <td className="px-6 py-4 font-medium text-slate-800">
-                        {product.name}
-                    </td>
-
-                    <td className="px-6 py-4 text-slate-600">
-                        {product.category}
-                    </td>
-
-                    <td className="px-6 py-4 text-slate-800">
-                        {product.price.toLocaleString()} DH
-                    </td>
-
-                    <td className="px-6 py-4 text-slate-600">
-                        {product.quantity}
-                    </td>
-
-                    <td className="px-6 py-4">
-                        {product.quantity <= 5
-                            ? <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium">Low Stock</span>
-                            : <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">In Stock</span>
-                        }
-                    </td>
-
-                    <td className="px-6 py-4">
-                        <button onClick={() => onEdit(product.id)} data-id={product.id} className="edit-product-button text-blue-600 hover:text-blue-800" >Edit</button>
-                        <button onClick={() => onOpenConfModel(product.id)} data-id={product.id} className="delete-product-button text-red-600 hover:text-red-800 ml-3">Delete</button>
-                    </td>
-
-                </tr>
-            ))}
-        </>
-        
-    )
-      
-}
